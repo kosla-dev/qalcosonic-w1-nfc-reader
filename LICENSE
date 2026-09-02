@@ -1,0 +1,20 @@
+Qalcosonic W1 NFC Reader — license notice
+
+This repository is multi-licensed by file type/scope:
+
+1. Original firmware configuration and software helper files:
+   MIT License — see LICENSES/MIT.txt
+
+2. Original PCB and mechanical hardware design/fabrication assets:
+   CERN Open Hardware Licence Version 2 — Permissive (CERN-OHL-P-2.0)
+   — see LICENSES/CERN-OHL-P-2.0.txt
+
+3. Original documentation and project photographs:
+   Creative Commons Attribution 4.0 International (CC BY 4.0)
+   — see LICENSES/CC-BY-4.0.txt
+
+Exact directory/file scope is defined in LICENSES/README.md.
+
+Third-party dependencies are NOT relicensed by this notice. In particular,
+dbmaxpayne/esphome_qalcosonicnfc remains under its upstream LGPL-2.1 license.
+See ATTRIBUTION.md for details.

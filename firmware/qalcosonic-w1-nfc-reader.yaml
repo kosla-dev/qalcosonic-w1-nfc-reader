@@ -1,0 +1,368 @@
+substitutions:
+  name: qalcosonic-w1-nfc-reader-xiao
+  friendly_name: Qalcosonic NFC Reader
+
+
+# ================================================================
+# QALCOSONIC NFC EXTERNAL COMPONENT
+# ================================================================
+#
+# Pinned to a known working upstream commit.
+# Do not use a moving branch such as "main" in production.
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/dbmaxpayne/esphome_qalcosonicnfc
+      ref: bed6773b803a7ebf71613585aad8a73376d38b8e
+    components:
+      - qalcosonicnfc
+
+
+# ================================================================
+# DEVICE
+# ================================================================
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  min_version: "2026.8.2"
+
+  devices:
+    - id: esp32_diagnostics
+      name: "ESP32-C3 Diagnostics"
+
+
+esp32:
+  board: seeed_xiao_esp32c3
+  framework:
+    type: esp-idf
+
+
+# ================================================================
+# NETWORK
+# ================================================================
+#
+# DHCP is used intentionally.
+# A static IP can be assigned separately in the router if desired.
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: "${friendly_name} ESP"
+    password: !secret fallback_password
+
+
+captive_portal:
+
+
+# ================================================================
+# LOGGING
+# ================================================================
+
+logger:
+  level: INFO
+  logs:
+    qalcosonicnfc: INFO
+
+
+# ================================================================
+# ESP32 RESET DIAGNOSTICS
+# ================================================================
+
+debug:
+  update_interval: 60s
+
+
+# ================================================================
+# HOME ASSISTANT API / OTA
+# ================================================================
+
+api:
+  encryption:
+    key: !secret api_key
+
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+
+# ================================================================
+# CONTROLS
+# ================================================================
+
+button:
+
+  # Read the water meter immediately
+  - platform: template
+    name: "Force Sensor Update"
+    icon: mdi:refresh
+    on_press:
+      - component.update: qalcosonicnfc_id
+
+  # Restart the ESP32-C3
+  - platform: restart
+    name: "Restart"
+    icon: mdi:restart
+    device_id: esp32_diagnostics
+
+
+# ================================================================
+# ESP32-C3 DIAGNOSTICS
+# ================================================================
+#
+# Hardware diagnostics update every 5 minutes to avoid unnecessary
+# Home Assistant recorder traffic.
+
+sensor:
+
+  - platform: internal_temperature
+    name: "Temperature"
+    device_id: esp32_diagnostics
+    entity_category: diagnostic
+    update_interval: 300s
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    device_id: esp32_diagnostics
+    entity_category: diagnostic
+    update_interval: 300s
+
+  - platform: uptime
+    name: "Uptime"
+    device_id: esp32_diagnostics
+    entity_category: diagnostic
+    type: seconds
+    update_interval: 300s
+
+
+binary_sensor:
+
+  - platform: status
+    name: "Status"
+    device_id: esp32_diagnostics
+    entity_category: diagnostic
+
+
+text_sensor:
+
+  - platform: debug
+    reset_reason:
+      name: "Reset Reason"
+      device_id: esp32_diagnostics
+      entity_category: diagnostic
+
+  - platform: version
+    name: "ESPHome Version"
+    device_id: esp32_diagnostics
+    entity_category: diagnostic
+    hide_timestamp: true
+    disabled_by_default: true
+
+  - platform: wifi_info
+
+    ip_address:
+      name: "IP Address"
+      device_id: esp32_diagnostics
+      entity_category: diagnostic
+      disabled_by_default: true
+
+    ssid:
+      name: "Connected SSID"
+      device_id: esp32_diagnostics
+      entity_category: diagnostic
+      disabled_by_default: true
+
+    bssid:
+      name: "Connected BSSID"
+      device_id: esp32_diagnostics
+      entity_category: diagnostic
+      disabled_by_default: true
+
+    mac_address:
+      name: "MAC Address"
+      device_id: esp32_diagnostics
+      entity_category: diagnostic
+      disabled_by_default: true
+
+
+# ================================================================
+# QALCOSONIC W1 WATER METER
+# ================================================================
+
+qalcosonicnfc:
+  id: qalcosonicnfc_id
+
+  # Read meter every 5 minutes
+  update_interval: 300s
+
+  # Allow transient NFC failures before marking the component failed
+  consecutive_errors_limit: 5
+
+
+  # --------------------------------------------------------------
+  # PN5180 -> Seeed Studio XIAO ESP32-C3
+  # --------------------------------------------------------------
+
+  pn5180_mosi_pin: GPIO6
+  pn5180_miso_pin: GPIO7
+  pn5180_sck_pin: GPIO21
+  pn5180_nss_pin: GPIO5
+  pn5180_busy_pin: GPIO20
+  pn5180_rst_pin: GPIO4
+
+
+  # --------------------------------------------------------------
+  # PRIMARY WATER DATA
+  # --------------------------------------------------------------
+
+  water_usage_sensor:
+    name: "Water Consumption"
+    force_update: true
+
+  water_flow_sensor:
+    name: "Water Flow"
+    force_update: true
+
+  water_temperature_sensor:
+    name: "Water Temperature"
+
+  battery_level_sensor:
+    name: "Battery Level"
+
+
+  # --------------------------------------------------------------
+  # SECONDARY DATA
+  # Hidden by default
+  # --------------------------------------------------------------
+
+  external_temperature_sensor:
+    name: "External Temperature"
+    disabled_by_default: true
+
+  water_usage_positive_sensor:
+    name: "Volume (Only Positive)"
+    disabled_by_default: true
+
+  water_usage_negative_sensor:
+    name: "Volume (Only Negative)"
+    disabled_by_default: true
+
+
+  # --------------------------------------------------------------
+  # IMPORTANT METER DIAGNOSTICS
+  # --------------------------------------------------------------
+
+  consecutive_errors_sensor:
+    name: "Consecutive Errors"
+
+  error_leakage:
+    name: "Leakage"
+
+  error_burst:
+    name: "Pipe Burst"
+
+  error_low_battery:
+    name: "Low Battery Warning"
+
+  error_hardware_failure:
+    name: "Hardware Failure"
+
+  error_software_failure:
+    name: "Software Failure"
+
+  error_no_signal:
+    name: "No Flow Sensor Signal"
+
+  error_reverse_flow:
+    name: "Reverse Flow"
+
+
+  # --------------------------------------------------------------
+  # LESS IMPORTANT METER DIAGNOSTICS
+  # Hidden by default
+  # --------------------------------------------------------------
+
+  error_reconfiguration_warning:
+    name: "Reconfiguration Warning"
+    disabled_by_default: true
+
+  error_no_consumption:
+    name: "No Consumption"
+    disabled_by_default: true
+
+  error_damage_meter_housing:
+    name: "Damage of Meter Housing"
+    disabled_by_default: true
+
+  error_calculator_hardware_failure:
+    name: "Calculator Hardware Failure"
+    disabled_by_default: true
+
+  error_optical_communication:
+    name: "Optical Communication Error"
+    disabled_by_default: true
+
+  error_flow_rate:
+    name: "Excessive Flow Rate"
+    disabled_by_default: true
+
+  error_freeze_alert:
+    name: "Freeze Alert"
+    disabled_by_default: true
+
+
+  # --------------------------------------------------------------
+  # METER INFORMATION
+  # Hidden by default
+  # --------------------------------------------------------------
+
+  meter_id_sensor:
+    name: "Meter ID"
+    disabled_by_default: true
+
+  serial_number_sensor:
+    name: "Serial Number"
+    disabled_by_default: true
+
+  manufacturer_id_sensor:
+    name: "Manufacturer ID"
+    disabled_by_default: true
+
+  meter_version_sensor:
+    name: "Meter Version"
+    disabled_by_default: true
+
+
+  # --------------------------------------------------------------
+  # TIMING / RAW DATA
+  # Hidden by default
+  # --------------------------------------------------------------
+
+  timepoint_sensor:
+    name: "Timepoint"
+    timezone: "Europe/Helsinki"
+    disabled_by_default: true
+
+  timepoint_sensor_raw:
+    name: "Timepoint Raw"
+    disabled_by_default: true
+
+  operating_time_sensor:
+    name: "Operating Time"
+    disabled_by_default: true
+
+  on_time_sensor:
+    name: "On Time"
+    disabled_by_default: true
+
+  error_flags_raw:
+    name: "Error Flags Raw"
+    disabled_by_default: true
+
+  raw_data_sensor:
+    name: "M-Bus Raw Data"
+    disabled_by_default: true

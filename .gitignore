@@ -1,0 +1,34 @@
+# ESPHome build/cache files
+.esphome/
+.pioenvs/
+.piolibdeps/
+.platformio/
+
+# Local ESPHome secrets
+secrets.yaml
+firmware/secrets.yaml
+
+# Compiled firmware and temporary build output
+*.bin
+*.elf
+*.map
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Editor / IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*~

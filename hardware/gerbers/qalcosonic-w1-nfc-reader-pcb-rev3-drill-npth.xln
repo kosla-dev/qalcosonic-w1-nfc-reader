@@ -1,0 +1,10 @@
+M48
+; non-plated mounting holes
+INCH,TZ
+T01C0.0945
+%
+G90
+T01
+X005512Y013386
+X015551Y013386
+M30
